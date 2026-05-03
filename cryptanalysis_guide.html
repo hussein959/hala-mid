@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تحليل الشفرة - دليل شامل لكسر الشفرات</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&family=JetBrains+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #7c3aed;
+    --green: #10b981;
+    --red: #ef4444;
+    --gold: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --border: rgba(0,212,255,0.15);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Tajawal', sans-serif;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  header {
+    background: linear-gradient(135deg, #0a0e1a 0%, #111827 50%, #1a0a2e 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 3rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(0,212,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  header h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+  }
+  header p { color: var(--muted); font-size: 1.1rem; }
+
+  /* Navigation */
+  nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  nav a {
+    color: var(--muted);
+    text-decoration: none;
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+  }
+  nav a:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.05);
+  }
+
+  /* Main */
+  main { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+
+  /* Section */
+  .section {
+    margin-bottom: 3rem;
+    background: var(--surface);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    animation: fadeIn 0.5s ease;
+  }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+  .section-header {
+    padding: 1.5rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+  .section-header h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .section-header p { color: var(--muted); font-size: 0.9rem; margin-top: 0.2rem; }
+  .section-body { padding: 2rem; }
+
+  /* Badge */
+  .badge {
+    display: inline-block;
+    padding: 0.2rem 0.7rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .badge-blue { background: rgba(0,212,255,0.15); color: var(--accent); border: 1px solid rgba(0,212,255,0.3); }
+  .badge-orange { background: rgba(255,107,53,0.15); color: var(--accent2); border: 1px solid rgba(255,107,53,0.3); }
+  .badge-green { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+  .badge-purple { background: rgba(124,58,237,0.15); color: #a78bfa; border: 1px solid rgba(124,58,237,0.3); }
+  .badge-gold { background: rgba(245,158,11,0.15); color: var(--gold); border: 1px solid rgba(245,158,11,0.3); }
+
+  /* Steps */
+  .steps { display: flex; flex-direction: column; gap: 1rem; margin: 1.5rem 0; }
+  .step {
+    display: flex; gap: 1rem; align-items: flex-start;
+    padding: 1rem 1.2rem;
+    background: var(--surface2);
+    border-radius: 10px;
+    border-right: 3px solid var(--accent);
+  }
+  .step-num {
+    width: 28px; height: 28px;
+    background: var(--accent);
+    color: #000;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+  .step p { font-size: 0.95rem; }
+  .step strong { color: var(--accent); }
+
+  /* Code / cipher display */
+  .cipher-block {
+    background: #050810;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.2rem 1.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--green);
+    word-break: break-all;
+    line-height: 1.8;
+    margin: 1rem 0;
+    position: relative;
+  }
+  .cipher-block .label {
+    position: absolute;
+    top: -10px; right: 12px;
+    background: var(--surface);
+    padding: 0 6px;
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-family: 'Tajawal', sans-serif;
+  }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; margin: 1rem 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  th {
+    background: var(--surface2);
+    color: var(--accent);
+    padding: 0.6rem 0.8rem;
+    text-align: center;
+    font-weight: 700;
+    border: 1px solid var(--border);
+  }
+  td {
+    padding: 0.5rem 0.8rem;
+    text-align: center;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  tr:hover td { background: rgba(0,212,255,0.04); }
+  td.highlight { color: var(--accent2); font-weight: 700; }
+  td.top { color: var(--gold); font-weight: 700; background: rgba(245,158,11,0.08); }
+
+  /* Grid */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  @media(max-width:700px){ .grid2{ grid-template-columns:1fr; } }
+
+  /* Info box */
+  .info-box {
+    padding: 1rem 1.2rem;
+    border-radius: 10px;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+    display: flex;
+    gap: 0.8rem;
+    align-items: flex-start;
+  }
+  .info-box.blue { background: rgba(0,212,255,0.07); border: 1px solid rgba(0,212,255,0.2); }
+  .info-box.orange { background: rgba(255,107,53,0.07); border: 1px solid rgba(255,107,53,0.2); }
+  .info-box.green { background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.2); }
+  .info-box.red { background: rgba(239,68,68,0.07); border: 1px solid rgba(239,68,68,0.2); }
+  .info-box .icon { font-size: 1.2rem; flex-shrink: 0; }
+
+  /* Matrix */
+  .matrix {
+    display: inline-grid;
+    gap: 2px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+    background: var(--surface2);
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 0.5rem;
+  }
+  .matrix-row { display: flex; gap: 2px; }
+  .matrix-cell {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+  .matrix-cell.active { background: rgba(0,212,255,0.2); color: var(--accent); }
+  .matrix-cell.result { background: rgba(16,185,129,0.2); color: var(--green); }
+
+  /* Arrow */
+  .arrow { font-size: 1.5rem; color: var(--accent); margin: 0 0.5rem; }
+
+  /* Result reveal */
+  .result-reveal {
+    background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(0,212,255,0.1));
+    border: 1px solid var(--green);
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    margin: 1rem 0;
+    text-align: center;
+  }
+  .result-reveal .label { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.3rem; }
+  .result-reveal .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.1rem;
+    color: var(--green);
+    font-weight: 700;
+    word-break: break-all;
+  }
+
+  /* Frequency bar */
+  .freq-bar-container { display: flex; flex-direction: column; gap: 4px; margin: 1rem 0; }
+  .freq-row { display: flex; align-items: center; gap: 8px; }
+  .freq-letter {
+    width: 24px; font-family: 'JetBrains Mono', monospace;
+    font-weight: 700; color: var(--accent); font-size: 0.9rem; text-align: center;
+  }
+  .freq-bar-wrap { flex: 1; background: var(--surface2); border-radius: 4px; height: 18px; overflow: hidden; }
+  .freq-bar { height: 100%; border-radius: 4px; transition: width 0.5s; display: flex; align-items: center; padding-right: 6px; }
+  .freq-count { font-size: 0.75rem; font-weight: 700; color: #000; }
+
+  /* Formula */
+  .formula {
+    background: #050810;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
+    color: var(--gold);
+    margin: 1rem 0;
+  }
+
+  /* Divider */
+  .divider { height: 1px; background: var(--border); margin: 1.5rem 0; }
+
+  h3 { color: var(--accent2); font-size: 1.1rem; margin: 1.5rem 0 0.7rem; }
+  h4 { color: var(--gold); font-size: 1rem; margin: 1rem 0 0.5rem; }
+  p { color: var(--text); margin-bottom: 0.7rem; font-size: 0.95rem; }
+  ul, ol { padding-right: 1.5rem; margin-bottom: 0.7rem; }
+  li { margin-bottom: 0.3rem; font-size: 0.95rem; color: var(--text); }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: -1px; }
+  .tab {
+    padding: 0.5rem 1.2rem;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    font-size: 0.85rem;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    background: var(--surface2);
+    color: var(--muted);
+    transition: all 0.2s;
+  }
+  .tab.active { background: var(--surface); color: var(--accent); border-color: var(--accent); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--border);
+    margin-top: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🔓 تحليل الشفرة — كسر الشفرات</h1>
+  <p>دليل شامل وتفصيلي لجميع أساليب كسر التشفير مع أمثلة عملية خطوة بخطوة</p>
+</header>
+
+<nav>
+  <a href="#attacks">أنواع الهجمات</a>
+  <a href="#transposition">كسر التبديل</a>
+  <a href="#caesar">كسر قيصر</a>
+  <a href="#affine">كسر الأفيني</a>
+  <a href="#vigenere">كسر فيجنير</a>
+  <a href="#statistical">التحليل الإحصائي</a>
+  <a href="#ic">مؤشر التوافق</a>
+</nav>
+
+<main>
+
+<!-- ===== SECTION 1: أنواع الهجمات ===== -->
+<div class="section" id="attacks">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(0,212,255,0.1)">⚔️</div>
+    <div>
+      <h2>أنواع هجمات التحليل</h2>
+      <p>تصنيف الهجمات حسب المعلومات المتاحة للمحلل</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="grid2">
+      <div class="info-box blue">
+        <span class="icon">🔍</span>
+        <div>
+          <strong style="color:var(--accent)">Ciphertext Only Attack</strong><br>
+          المحلل يملك النص المشفر فقط — الأصعب.<br>
+          يعتمد على الإحصاء والتخمين.
+        </div>
+      </div>
+      <div class="info-box orange">
+        <span class="icon">📋</span>
+        <div>
+          <strong style="color:var(--accent2)">Known Plaintext Attack</strong><br>
+          المحلل يملك نصاً عادياً ونظيره المشفر.<br>
+          يستخدم لاستنتاج المفتاح.
+        </div>
+      </div>
+      <div class="info-box green">
+        <span class="icon">✏️</span>
+        <div>
+          <strong style="color:var(--green)">Chosen Plaintext Attack</strong><br>
+          المحلل يختار النص ليُشفَّر.<br>
+          أقوى من Known Plaintext.
+        </div>
+      </div>
+      <div class="info-box red">
+        <span class="icon">🔨</span>
+        <div>
+          <strong style="color:var(--red)">Brute Force Attack</strong><br>
+          تجربة جميع المفاتيح الممكنة.<br>
+          ضعيف مع المفاتيح الكبيرة.
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>📌 مثال عملي: Brute Force على تشفير قيصر</h3>
+    <p>التشفير بقيصر له 26 مفتاحاً فقط — يمكن تجربتها جميعاً بسهولة:</p>
+
+    <div class="cipher-block">
+      <span class="label">النص المشفر</span>
+      KHOOR ZRUOG
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>المفتاح k</th><th>النتيجة</th><th>هل منطقية؟</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td style="font-family:monospace">JGNNQ YQTNF</td><td>❌</td></tr>
+          <tr><td>2</td><td style="font-family:monospace">IFMMP XPSME</td><td>❌</td></tr>
+          <tr><td style="color:var(--gold);font-weight:700">3</td><td style="font-family:monospace;color:var(--green);font-weight:700">HELLO WORLD</td><td style="color:var(--green);font-weight:700">✅ وُجد!</td></tr>
+          <tr><td>4</td><td style="font-family:monospace">GDKKN VNQKC</td><td>❌</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="result-reveal">
+      <div class="label">النص الأصلي المكتشف</div>
+      <div class="value">HELLO WORLD — المفتاح = 3</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ===== SECTION 2: كسر التبديل ===== -->
+<div class="section" id="transposition">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(124,58,237,0.1)">🔀</div>
+    <div>
+      <h2>كسر شفرات التبديل (Transposition)</h2>
+      <p>Columnar Transposition — Double Transposition — Scytale</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="info-box blue">
+      <span class="icon">💡</span>
+      <div><strong>المبدأ الأساسي:</strong> في التبديل، الحروف نفسها موجودة لكنها مُرتَّبة بطريقة مختلفة. لذا تبقى <strong style="color:var(--accent)">تكرارات الحروف مطابقة للنص الأصلي</strong> — وهذا هو مفتاح الكشف.</div>
+    </div>
+
+    <!-- Columnar -->
+    <h3>1. كسر التبديل العمودي (Columnar Transposition)</h3>
+    <p><strong>الفكرة:</strong> نعرف أن النص المشفر هو قراءة أعمدة مصفوفة. لكسره نجرب عدد الأعمدة الذي هو مقسم لعدد الحروف.</p>
+
+    <div class="cipher-block">
+      <span class="label">النص المشفر</span>
+      SHGEEHELTTIX
+    </div>
+
+    <p>عدد الحروف = 12 → المقسِّمات: 2، 3، 4، 6</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div><p>نجرب <strong>4 أعمدة</strong> (12 ÷ 4 = 3 صفوف)، نضع الحروف في الأعمدة:</p></div>
+      </div>
+    </div>
+
+    <div style="text-align:center; margin:1rem 0">
+      <div class="matrix" style="grid-template-columns:repeat(4,1fr)">
+        <div class="matrix-row">
+          <div class="matrix-cell">S</div><div class="matrix-cell">E</div><div class="matrix-cell">E</div><div class="matrix-cell">T</div>
+        </div>
+        <div class="matrix-row">
+          <div class="matrix-cell">H</div><div class="matrix-cell">E</div><div class="matrix-cell">L</div><div class="matrix-cell">I</div>
+        </div>
+        <div class="matrix-row">
+          <div class="matrix-cell result">G</div><div class="matrix-cell result">H</div><div class="matrix-cell result">T</div><div class="matrix-cell result">X</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">2</div>
+        <div><p>نقرأ <strong>الصفوف</strong>: S-E-E-T / H-E-L-I / G-H-T-X</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div><p>نحصل على: <strong style="color:var(--green)">SEETHELIGHT</strong> — منطقي! ✅</p></div>
+      </div>
+    </div>
+
+    <div class="result-reveal">
+      <div class="label">النص الأصلي المكتشف</div>
+      <div class="value">SEETHELIGHT — عدد الأعمدة (المفتاح) = 4</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Keyword Columnar -->
+    <h3>2. كسر التبديل بكلمة مفتاحية (Keyword Columnar)</h3>
+
+    <div class="cipher-block">
+      <span class="label">النص المشفر (45 حرفاً)</span>
+      VOESA IVENE MRTNL EANGE WTNIM HTMEE ADLTR NISHO DWOEH
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div><p>45 حرفاً → الأبعاد الممكنة: <strong>9×5</strong> أو 5×9 أو 15×3 أو 3×15</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div><p>نجرب مصفوفة <strong>9 صفوف × 5 أعمدة</strong>، نضع النص بالأعمدة (العمود 0 ثم 1 ثم ...):</p></div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>العمود 0</th><th>العمود 1</th><th>العمود 2</th><th>العمود 3</th><th>العمود 4</th></tr></thead>
+        <tbody>
+          <tr><td class="top">V</td><td>E</td><td>G</td><td>M</td><td>I</td></tr>
+          <tr><td>O</td><td>M</td><td>E</td><td>E</td><td>S</td></tr>
+          <tr><td>E</td><td>R</td><td>W</td><td>E</td><td>H</td></tr>
+          <tr><td>S</td><td>T</td><td>T</td><td>A</td><td>O</td></tr>
+          <tr><td>A</td><td>N</td><td>N</td><td>D</td><td>D</td></tr>
+          <tr><td>I</td><td>L</td><td>I</td><td>L</td><td>W</td></tr>
+          <tr><td>V</td><td>E</td><td>M</td><td>T</td><td>O</td></tr>
+          <tr><td>E</td><td>A</td><td>H</td><td>R</td><td>E</td></tr>
+          <tr><td>N</td><td>N</td><td>T</td><td>N</td><td>H</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">3</div>
+        <div><p>نحاول تبديل الأعمدة حتى تظهر كلمة في السطر الأول.<br>
+        نجرب ترتيب الأعمدة: <strong>2, 4, 0, 1, 3</strong> → السطر الأول: <strong style="color:var(--gold)">G-I-V-E-M</strong> ← يبدأ بـ GIVE!</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div><p>هذا يعني المفتاح = <strong style="color:var(--accent)">24013</strong> (ترتيب الأعمدة الأبجدي).</p></div>
+      </div>
+    </div>
+
+    <div class="result-reveal">
+      <div class="label">النص الأصلي المكتشف</div>
+      <div class="value">GIVE ME SOMEWHERE TO STAND AND I WILL MOVE THE EARTH</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Double Transposition -->
+    <h3>3. كسر التبديل المضاعف (Double Transposition) — تقنية Divide & Conquer</h3>
+
+    <div class="info-box orange">
+      <span class="icon">⚡</span>
+      <div>
+        <strong>الحيلة:</strong> بدلاً من تخمين المفتاح كاملاً دفعة واحدة، نكسره على مرحلتين:
+        <br>أولاً نتراجع عن تبديل الأعمدة → ثم نتراجع عن تبديل الصفوف.
+        هذا يقلل الاحتمالات من N! إلى مرحلتين منفصلتين.
+      </div>
+    </div>
+
+    <div class="cipher-block">
+      <span class="label">النص المشفر</span>
+      NADWTKCAATAT
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div><p>نضع النص في مصفوفة 3×4: N-A-D-W / T-K-C-A / A-T-A-T</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div><p>نجرب تبديلات الأعمدة حتى نحصل على كلمات جزئية.<br>
+        نجرب <strong>(3,1,0,2)</strong>: W-A-D-N / A-A-C-T / T-T-A-A → أعمدة أصبحت ATTACK... ✅</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div><p>بعد إلغاء تبديل الأعمدة نجرب تبديل الصفوف <strong>(2,1,0)</strong>:<br>
+        نحصل على: A-T-T-A / C-K-A-T / D-A-W-N</p></div>
+      </div>
+    </div>
+
+    <div class="result-reveal">
+      <div class="label">النص الأصلي المكتشف</div>
+      <div class="value">ATTACKATDAWN</div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ===== SECTION 3: كسر قيصر ===== -->
+<div class="section" id="caesar">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(245,158,11,0.1)">👑</div>
+    <div>
+      <h2>كسر شفرة قيصر (Caesar Cipher)</h2>
+      <p>26 مفتاحاً فقط — يُكسر بالقوة الغاشمة أو تحليل التكرار</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="info-box blue">
+      <span class="icon">📐</span>
+      <div>
+        <strong>معادلة الفك:</strong> p = (c − k) mod 26<br>
+        حيث c = قيمة الحرف المشفر (A=0, B=1,...Z=25)، k = مقدار الإزاحة
+      </div>
+    </div>
+
+    <h3>مثال عملي كامل</h3>
+
+    <div class="cipher-block">
+      <span class="label">النص المشفر</span>
+      WKH TXLFN EURZQ IRA
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div><p><strong>نحسب تكرار الحروف:</strong> W(1), K(1), H(1), T(1), X(1), L(1), F(1), N(1), E(1), U(1), R(2), Z(1), Q(1), I(1), A(1)<br>
+        لا يوجد حرف واضح الهيمنة لأن النص قصير → نلجأ للقوة الغاشمة</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div><p><strong>نجرب k=3:</strong> W→T, K→H, H→E → "THE" ✅ كلمة إنجليزية شائعة!</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div><p>نطبق k=3 على الجميع: WKH→THE, TXLFN→QUICK, EURZQ→BROWN, IRA→FOX</p></div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>المشفر</th><th>القيمة</th><th>−3</th><th>النتيجة</th></tr></thead>
+        <tbody>
+          <tr><td>W</td><td>22</td><td>22−3=19</td><td class="highlight">T</td></tr>
+          <tr><td>K</td><td>10</td><td>10−3=7</td><td class="highlight">H</td></tr>
+          <tr><td>H</td><td>7</td><td>7−3=4</td><td class="highlight">E</td></tr>
+          <tr><td>T</td><td>19</td><td>19−3=16</td><td class="highlight">Q</td></tr>
+          <tr><td>X</td><td>23</td><td>23−3=20</td><td class="highlight">U</td></tr>
+          <tr><td>L</td><td>11</td><td>11−3=8</td><td class="highlight">I</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="result-reveal">
+      <div class="label">النص الأصلي المكتشف</div>
+      <div class="value">THE QUICK BROWN FOX — المفتاح = 3</div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ===== SECTION 4: كسر الأفيني ===== -->
+<div class="section" id="affine">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(255,107,53,0.1)">🧮</div>
+    <div>
+      <h2>كسر الشفرة الأفينية (Affine Cipher)</h2>
+      <p>e(x) = ax + b (mod 26) — 312 مفتاحاً فقط</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="info-box blue">
+      <span class="icon">🔑</span>
+      <div>
+        <strong>طريقة الكسر:</strong> نفترض أن أكثر حرفين تكراراً في النص المشفر يقابلان E و T في الإنجليزية (أو حسب الجدول الإحصائي)، ثم نحل معادلتين بمجهولين a و b.
+      </div>
+    </div>
+
+    <h3>المثال من الملزمة خطوة بخطوة</h3>
+
+    <div class="cipher-block">
+      <span class="label">النص المشفر</span>
+      FMXVEDKAPHFERBNDKRXRSREFMORUDSDKDVSHVUFEDKAPR KDLYEVLRHHRH
+    </div>
+
+    <h4>الخطوة 1: حساب التكرارات</h4>
+    <div class="freq-bar-container">
+      <div class="freq-row"><span class="freq-letter">R</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:100%;background:linear-gradient(90deg,#ef4444,#f97316)"><span class="freq-count">8</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">D</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:87%;background:linear-gradient(90deg,#f59e0b,#eab308)"><span class="freq-count">7</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">E</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:62%;background:linear-gradient(90deg,#10b981,#06b6d4)"><span class="freq-count">5</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">H</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:62%;background:linear-gradient(90deg,#10b981,#06b6d4)"><span class="freq-count">5</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">K</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:62%;background:linear-gradient(90deg,#10b981,#06b6d4)"><span class="freq-count">5</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">F</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:50%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"><span class="freq-count">4</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">S</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:50%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"><span class="freq-count">4</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">V</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:50%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"><span class="freq-count">4</span></div></div></div>
+    </div>
+
+    <h4>الخطوة 2: وضع الفرضيات</h4>
+    <p>R=17 هو الأكثر تكراراً → يُرجَّح أنه يقابل <strong>e</strong> (القيمة=4)</p>
+    <p>D=3 ثاني أكثر تكراراً → يُرجَّح أنه يقابل <strong>t</strong> (القيمة=19)</p>
+
+    <div class="formula">
+      e_K(4) = 17 → 4a + b = 17<br>
+      e_K(19) = 3 → 19a + b = 3
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div><p>نطرح: 15a = -14 mod 26 → 15a = 12 mod 26<br>
+        نجد: a = 6 ← لكن gcd(6,26)=2 ≠ 1 → <strong style="color:var(--red)">مفتاح غير صالح! ❌</strong></p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div><p><strong>الفرضية الثانية:</strong> R=e, E=t (E القيمة=4, E يقابل t=19)<br>
+        4a+b=17, 4a+b=4... → a=13 ← gcd(13,26)=13 → <strong style="color:var(--red)">غير صالح! ❌</strong></p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div><p><strong>الفرضية الثالثة:</strong> R=e, H=t → H قيمته 7<br>
+        4a+b=17, 19a+b=7 → 15a=−10 mod 26 → a=8 → gcd(8,26)=2 → <strong style="color:var(--red)">غير صالح! ❌</strong></p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div><p><strong>الفرضية الرابعة:</strong> R=e, K=t → K قيمته 10<br>
+        4a+b=17, 10a+b=19 (عكس: نكتشف أن K=19 بالترتيب للحروف) →<br>
+        حل المعادلتين: <strong style="color:var(--green)">a=3, b=5 → gcd(3,26)=1 ✅ صالح!</strong></p></div>
+      </div>
+    </div>
+
+    <h4>الخطوة 3: دالة الفك</h4>
+    <div class="formula">
+      d_K(y) = a⁻¹(y − b) mod 26<br>
+      المعكوس الضربي لـ 3 mod 26 = 9 (لأن 3×9=27≡1 mod 26)<br>
+      d_K(y) = 9(y − 5) mod 26 = 9y − 45 mod 26 = 9y − 19 mod 26
+    </div>
+
+    <div class="result-reveal">
+      <div class="label">النص الأصلي المكتشف — المفتاح (a=3, b=5)</div>
+      <div class="value">ALGORITHMS ARE QUITE GENERAL DEFINITION SO FAR ARITHMETIC PROCESSES</div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ===== SECTION 5: كسر فيجنير ===== -->
+<div class="section" id="vigenere">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(16,185,129,0.1)">🗝️</div>
+    <div>
+      <h2>كسر شفرة فيجنير (Vigenère Cipher)</h2>
+      <p>اختبار كاسيسكي + مؤشر التوافق لاكتشاف طول المفتاح</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="info-box blue">
+      <span class="icon">🎯</span>
+      <div>
+        <strong>الاستراتيجية:</strong>
+        <br>1. نكتشف <strong>طول المفتاح</strong> باختبار كاسيسكي أو مؤشر التوافق
+        <br>2. نقسّم النص لمجموعات بحجم طول المفتاح
+        <br>3. نحلل كل مجموعة كـ <strong>شفرة قيصر منفصلة</strong>
+      </div>
+    </div>
+
+    <h3>اختبار كاسيسكي (Kasiski Test)</h3>
+    <p>إذا تكررت مجموعة حروف في النص المشفر، فالمسافة بين التكرارين تقبل القسمة على طول المفتاح.</p>
+
+    <div class="cipher-block">
+      <span class="label">مثال</span>
+      IVIVYGARMLMYIVIKFDIVIFRL
+      (مشفّر بكلمة مفتاحية POETRY — 6 حروف)
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div><p>نبحث عن التكرارات: <strong style="color:var(--gold)">IVI</strong> يظهر في المواضع 0، 12، 18</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div><p>المسافات: 12−0=<strong>12</strong>، 18−12=<strong>6</strong></p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div><p>GCD(12, 6) = <strong style="color:var(--accent)">6</strong> → طول المفتاح المحتمل = 6 أو قسيم منه (2، 3)</p></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>كسر فيجنير خطوة بخطوة (مفتاح 3 حروف)</h3>
+
+    <div class="cipher-block">
+      <span class="label">النص المشفر</span>
+      RLWRV MRLAQ EDUEQ QWGKI LFMFE XZYXA QXGJH FMXKM QWRLA LKLFE...
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div><p><strong>فرضنا طول المفتاح = 3</strong>، نقسّم النص 3 مجموعات:</p>
+        <p>S₀ = الحرف 0, 3, 6, 9, ... → نحسب تكرارات كل مجموعة</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div>
+          <p>من جدول S₀: الأكثر تكراراً <strong>R</strong> → نفترض R = E → k₀ = R−E = 17−4 = <strong>13</strong> أو...</p>
+          <p>نجرب القيم المحتملة لـ k₀: {13, 24, 4, 3, 0, 9, 17, 25}</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div><p>من S₁: الأكثر تكراراً <strong>X</strong> → k₁ محتملة: {19, 4, 13, ...}</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div><p>من S₂: الأكثر تكراراً <strong>W</strong> → k₂ محتملة: {18, ...}</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div><p>نجرب كل تركيبة (8³=512 احتمال) على أول بضعة حروف.</p>
+        <p>الفائز: <strong style="color:var(--gold)">(k₀=24, k₁=4, k₂=18)</strong> → الكلمة = <strong style="color:var(--green)">YES</strong> ✅</p></div>
+      </div>
+    </div>
+
+    <h4>التحقق: فك التشفير بمفتاح YES</h4>
+    <div class="formula">
+      p_i = (c_i − k_{i mod 3}) mod 26<br>
+      R=17 − Y=24 → 17−24 = −7 ≡ 19 = T ✅<br>
+      L=11 − E=4 → 7 = H ✅<br>
+      W=22 − S=18 → 4 = E ✅ → "THE..."
+    </div>
+
+    <div class="result-reveal">
+      <div class="label">النص الأصلي المكتشف — المفتاح YES</div>
+      <div class="value">THE TRUTH IS ALWAYS SOMETHING THAT IS TOLD, NOT SOMETHING THAT IS KNOWN...</div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ===== SECTION 6: التحليل الإحصائي ===== -->
+<div class="section" id="statistical">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(245,158,11,0.1)">📊</div>
+    <div>
+      <h2>التحليل الإحصائي للشفرات البسيطة</h2>
+      <p>استخدام تكرار الحروف والثنائيات والثلاثيات لكسر الشفرة</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>جدول تكرار الحروف الإنجليزية (مرتباً تنازلياً)</h3>
+    <div class="freq-bar-container">
+      <div class="freq-row"><span class="freq-letter">E</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:100%;background:linear-gradient(90deg,#ef4444,#f97316)"><span class="freq-count">12.7%</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">T</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:72%;background:linear-gradient(90deg,#f59e0b,#eab308)"><span class="freq-count">9.1%</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">A</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:65%;background:linear-gradient(90deg,#10b981,#06b6d4)"><span class="freq-count">8.2%</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">O</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:60%;background:linear-gradient(90deg,#10b981,#06b6d4)"><span class="freq-count">7.5%</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">I</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:55%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"><span class="freq-count">7.0%</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">N</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:53%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"><span class="freq-count">6.7%</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">S</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:50%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"><span class="freq-count">6.3%</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">H</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:48%;background:linear-gradient(90deg,#ec4899,#f43f5e)"><span class="freq-count">6.1%</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">R</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:48%;background:linear-gradient(90deg,#ec4899,#f43f5e)"><span class="freq-count">6.0%</span></div></div></div>
+    </div>
+
+    <div class="info-box green">
+      <span class="icon">💡</span>
+      <div>
+        <strong>قاعدة ETNORIAS:</strong> تذكّر الحروف الأكثر شيوعاً بكلمة "SENORITA"<br>
+        أو بترتيب تنازلي: <strong style="color:var(--gold)">E - T - A - O - I - N - S - H - R</strong>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>مثال عملي: كسر شفرة استبدال بسيطة بالإحصاء</h3>
+
+    <div class="cipher-block">
+      <span class="label">النص المشفر</span>
+      LWVOL QVWAT DOLOH HLDAW VWPTV FHWDW RSVWO DNTVA WRWDF HWHFO RLFWK LFJLF FLQOT DHFVW DMFBW DFWVO DMSTX VHWAF TVPKA QLVCW
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div><p><strong>نحسب التكرارات:</strong><br>
+        W=16 ظهور، F=9، V=8، D=7، L=6، H=5، O=5...<br>
+        <strong>W هو الأكثر تكراراً</strong> → على الأرجح يمثّل <strong>E</strong></p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div><p><strong>الثاني F</strong> → على الأرجح <strong>T</strong> أو A أو O</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div><p>نستبدل: W→E, F→T, V→A, D→O, L→N...<br>
+        "LWVOL" → "N_EON" → "NEON"... نكمل التخمين بالكلمات الجزئية</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div><p>نبحث عن الثنائيات: WH, HW, VW → تقابل EH, HE, AE... (TH هي أشيع ثنائية → نبحث عنها)</p></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div>
+        <h4>أشيع الثنائيات (Digraphs)</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>الثنائية</th><th>الترتيب</th></tr></thead>
+            <tbody>
+              <tr><td class="top">TH</td><td>1</td></tr>
+              <tr><td>HE</td><td>2</td></tr>
+              <tr><td>IN</td><td>3</td></tr>
+              <tr><td>ER</td><td>4</td></tr>
+              <tr><td>AN</td><td>5</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <h4>أشيع الثلاثيات (Trigraphs)</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>الثلاثية</th><th>الترتيب</th></tr></thead>
+            <tbody>
+              <tr><td class="top">THE</td><td>1</td></tr>
+              <tr><td>ING</td><td>2</td></tr>
+              <tr><td>AND</td><td>3</td></tr>
+              <tr><td>HER</td><td>4</td></tr>
+              <tr><td>ENT</td><td>5</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ===== SECTION 7: مؤشر التوافق ===== -->
+<div class="section" id="ic">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(124,58,237,0.1)">📐</div>
+    <div>
+      <h2>مؤشر التوافق (Index of Coincidence)</h2>
+      <p>تحديد نوع الخوارزمية المستخدمة قبل كسرها</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="formula">
+      Ic = Σ Fᵢ(Fᵢ − 1) / n(n − 1)
+    </div>
+
+    <div class="grid2">
+      <div class="info-box blue">
+        <span class="icon">🔵</span>
+        <div>
+          <strong>Ic ≈ 0.065</strong><br>
+          شفرة استبدال أحادية (Mono-alphabetic)<br>
+          أو شفرة تبديل (Transposition)<br>
+          التوزيع "خشن" مثل النص الأصلي
+        </div>
+      </div>
+      <div class="info-box orange">
+        <span class="icon">🟠</span>
+        <div>
+          <strong>Ic ≈ 0.038</strong><br>
+          شفرة استبدال متعددة (Poly-alphabetic)<br>
+          كفيجنير بمفتاح طويل<br>
+          التوزيع "مسطّح" وعشوائي
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box green">
+      <span class="icon">📌</span>
+      <div>
+        <strong>قاعدة القرار:</strong><br>
+        Ic > 0.065 → خوارزمية أحادية (Mono)<br>
+        Ic < 0.065 (قريب من 0.038) → خوارزمية متعددة (Poly)<br>
+        Ic ≈ 0.065 بالضبط → تبديل (Transposition)
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>المثال من الملزمة: حساب Ic كاملاً</h3>
+
+    <div class="cipher-block">
+      <span class="label">النص المشفر (120 حرف)</span>
+      EEAHR RFOWW TGDTE SCHES ROEST EMCNEAOOTL AKNEE TSSEO AVXNC STPOO OEOEATASBI OAEER AXHEE RADNF PSINO ISEAURPNED XEPSE PFCDL LZTER JAETY RETHE
+    </div>
+
+    <h4>جدول التكرارات:</h4>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>الحرف</th><th>التكرار (F)</th><th>F(F-1)</th><th>الحرف</th><th>التكرار (F)</th><th>F(F-1)</th></tr></thead>
+        <tbody>
+          <tr><td>A</td><td class="top">11</td><td>110</td><td>N</td><td>6</td><td>30</td></tr>
+          <tr><td>B</td><td>1</td><td>0</td><td>O</td><td class="top">11</td><td>110</td></tr>
+          <tr><td>C</td><td>4</td><td>12</td><td>P</td><td>5</td><td>20</td></tr>
+          <tr><td>D</td><td>4</td><td>12</td><td>Q</td><td>0</td><td>0</td></tr>
+          <tr><td>E</td><td class="top">24</td><td class="top">552</td><td>R</td><td>8</td><td>56</td></tr>
+          <tr><td>F</td><td>3</td><td>6</td><td>S</td><td>10</td><td>90</td></tr>
+          <tr><td>G</td><td>1</td><td>0</td><td>T</td><td>10</td><td>90</td></tr>
+          <tr><td>H</td><td>4</td><td>12</td><td>U</td><td>1</td><td>0</td></tr>
+          <tr><td>I</td><td>3</td><td>6</td><td>V</td><td>1</td><td>0</td></tr>
+          <tr><td>J</td><td>1</td><td>0</td><td>W</td><td>2</td><td>2</td></tr>
+          <tr><td>K</td><td>1</td><td>0</td><td>X</td><td>3</td><td>6</td></tr>
+          <tr><td>L</td><td>3</td><td>6</td><td>Y</td><td>1</td><td>0</td></tr>
+          <tr><td>M</td><td>1</td><td>0</td><td>Z</td><td>1</td><td>0</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>الحساب:</h4>
+    <div class="formula">
+      ΣF(F-1) = 110+0+12+12+552+6+0+12+6+0+0+6+0+30+110+20+56+90+90+0+0+2+6+0+0+0 = <strong>1110</strong>
+      <br><br>
+      n(n-1) = 120 × 119 = <strong>14280</strong>
+      <br><br>
+      Ic = 1110 / 14280 = <strong style="color:var(--green)">0.0777</strong>
+    </div>
+
+    <div class="result-reveal">
+      <div class="label">النتيجة</div>
+      <div class="value">Ic = 0.077 > 0.065 → خوارزمية استبدال أحادية (Mono-alphabetic) ✅</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>استخدام Ic لتحديد طول مفتاح فيجنير</h3>
+
+    <div class="formula">
+      k ≈ (0.0265 × N) / ((N-1) × Ic − 0.065N + 0.0385)
+      <br><small style="color:var(--muted)">حيث N = طول النص, Ic = مؤشر التوافق المحسوب</small>
+    </div>
+
+    <div class="info-box blue">
+      <span class="icon">🧪</span>
+      <div>
+        <strong>مثال:</strong> إذا كان Ic = 0.045 ونص بطول 100 حرف:<br>
+        k ≈ (0.0265×100) / ((99×0.045) − (0.065×100) + 0.0385)<br>
+        k ≈ 2.65 / (4.455 − 6.5 + 0.0385) = 2.65 / (−2.006) ... نجرب k=2 و k=3
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>ملخص استراتيجية الكسر الكاملة</h3>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div><p><strong>احسب Ic</strong> لتحديد نوع الخوارزمية (أحادية / متعددة / تبديل)</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div><p><strong>إذا كانت تبديل (Transposition):</strong> جرّب أبعاد المصفوفة المختلفة وابحث عن كلمات في الصفوف</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div><p><strong>إذا كانت أحادية (Mono):</strong> استخدم جدول التكرارات وقارن بالحروف الإنجليزية الشائعة ETAOINSH</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div><p><strong>إذا كانت متعددة (Poly):</strong> طبّق كاسيسكي/Ic لإيجاد طول المفتاح، ثم حلّل كل مجموعة منفردة</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div><p><strong>تحقق:</strong> النص المفكوك يجب أن يكون منطقياً ومقروءاً</p></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</main>
+
+<footer>
+  تحليل الشفرة — كلية علوم الحاسوب، الجامعة التكنولوجية | الفصل الثاني 2025-2026
+</footer>
+
+</body>
+</html>
