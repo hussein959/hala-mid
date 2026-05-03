@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cryptanalysis — Complete Breaking Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #7c3aed;
+    --green: #10b981;
+    --red: #ef4444;
+    --gold: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --border: rgba(0,212,255,0.15);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  header {
+    background: linear-gradient(135deg, #0a0e1a 0%, #111827 50%, #1a0a2e 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 3rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(0,212,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  header h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+  }
+  header p { color: var(--muted); font-size: 1.05rem; }
+
+  nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0.8rem 2rem;
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+  nav a {
+    color: var(--muted);
+    text-decoration: none;
+    padding: 0.35rem 0.9rem;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+  }
+  nav a:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.05);
+  }
+
+  main { max-width: 1080px; margin: 0 auto; padding: 2rem; }
+
+  .section {
+    margin-bottom: 2.5rem;
+    background: var(--surface);
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .section-header {
+    padding: 1.4rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(90deg, var(--surface2), var(--surface));
+  }
+  .section-icon {
+    width: 46px; height: 46px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+  .section-header h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.01em;
+  }
+  .section-header p { color: var(--muted); font-size: 0.85rem; margin-top: 0.15rem; }
+  .section-body { padding: 1.8rem 2rem; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  @media(max-width:700px){ .grid2,.grid3{ grid-template-columns:1fr; } }
+
+  .info-box {
+    padding: 1rem 1.2rem;
+    border-radius: 10px;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+    display: flex;
+    gap: 0.8rem;
+    align-items: flex-start;
+  }
+  .info-box.blue { background: rgba(0,212,255,0.06); border: 1px solid rgba(0,212,255,0.2); }
+  .info-box.orange { background: rgba(255,107,53,0.06); border: 1px solid rgba(255,107,53,0.2); }
+  .info-box.green { background: rgba(16,185,129,0.06); border: 1px solid rgba(16,185,129,0.2); }
+  .info-box.red { background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); }
+  .info-box.purple { background: rgba(124,58,237,0.06); border: 1px solid rgba(124,58,237,0.2); }
+  .info-box .icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+
+  .steps { display: flex; flex-direction: column; gap: 0.8rem; margin: 1.2rem 0; }
+  .step {
+    display: flex; gap: 1rem; align-items: flex-start;
+    padding: 0.9rem 1.1rem;
+    background: var(--surface2);
+    border-radius: 10px;
+    border-left: 3px solid var(--accent);
+  }
+  .step-num {
+    width: 26px; height: 26px;
+    background: var(--accent);
+    color: #000;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .step p { font-size: 0.92rem; margin: 0; }
+  .step strong { color: var(--accent); }
+
+  .cipher-block {
+    background: #050810;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1rem 1.4rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88rem;
+    color: var(--green);
+    word-break: break-all;
+    line-height: 1.9;
+    margin: 1rem 0;
+    position: relative;
+  }
+  .cipher-block .label {
+    position: absolute;
+    top: -10px; left: 12px;
+    background: var(--surface);
+    padding: 0 6px;
+    font-size: 0.68rem;
+    color: var(--muted);
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .formula {
+    background: #050810;
+    border: 1px solid rgba(245,158,11,0.25);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--gold);
+    margin: 1rem 0;
+    line-height: 1.9;
+  }
+
+  .result-reveal {
+    background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(0,212,255,0.08));
+    border: 1px solid var(--green);
+    border-radius: 10px;
+    padding: 1rem 1.4rem;
+    margin: 1rem 0;
+    text-align: center;
+  }
+  .result-reveal .label { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.3rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+  .result-reveal .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+    color: var(--green);
+    font-weight: 700;
+    word-break: break-all;
+  }
+
+  .table-wrap { overflow-x: auto; margin: 1rem 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th {
+    background: var(--surface2);
+    color: var(--accent);
+    padding: 0.55rem 0.8rem;
+    text-align: center;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    font-size: 0.82rem;
+    letter-spacing: 0.03em;
+  }
+  td {
+    padding: 0.45rem 0.8rem;
+    text-align: center;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 0.88rem;
+  }
+  tr:hover td { background: rgba(0,212,255,0.03); }
+  td.hi { color: var(--accent2); font-weight: 700; }
+  td.top { color: var(--gold); font-weight: 700; background: rgba(245,158,11,0.07); }
+  td.good { color: var(--green); font-weight: 700; }
+  td.bad { color: var(--red); }
+  td.mono { font-family: 'JetBrains Mono', monospace; }
+
+  .matrix-wrap { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; justify-content: center; margin: 1rem 0; }
+  .matrix {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--surface2);
+    padding: 0.8rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .matrix-label { font-size: 0.72rem; color: var(--muted); text-align: center; margin-bottom: 4px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
+  .matrix-row { display: flex; gap: 3px; }
+  .matrix-cell {
+    width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 600;
+    font-size: 0.82rem;
+  }
+  .matrix-cell.active { background: rgba(0,212,255,0.18); color: var(--accent); }
+  .matrix-cell.result { background: rgba(16,185,129,0.18); color: var(--green); }
+  .matrix-cell.hi { background: rgba(245,158,11,0.18); color: var(--gold); }
+  .matrix-cell.hdr { background: transparent; color: var(--muted); font-size: 0.72rem; }
+
+  .arrow { font-size: 1.6rem; color: var(--accent); }
+
+  .freq-bar-container { display: flex; flex-direction: column; gap: 5px; margin: 1rem 0; }
+  .freq-row { display: flex; align-items: center; gap: 8px; }
+  .freq-letter { width: 20px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--accent); font-size: 0.85rem; text-align: center; }
+  .freq-bar-wrap { flex: 1; background: var(--surface2); border-radius: 4px; height: 16px; overflow: hidden; }
+  .freq-bar { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 6px; }
+  .freq-count { font-size: 0.7rem; font-weight: 700; color: #000; }
+  .freq-pct { font-size: 0.75rem; color: var(--muted); width: 38px; text-align: right; }
+
+  .divider { height: 1px; background: var(--border); margin: 1.5rem 0; }
+  h3 { color: var(--accent2); font-size: 1.05rem; font-weight: 700; margin: 1.5rem 0 0.6rem; }
+  h4 { color: var(--gold); font-size: 0.95rem; font-weight: 600; margin: 1rem 0 0.4rem; }
+  p { color: var(--text); margin-bottom: 0.6rem; font-size: 0.93rem; }
+  ul, ol { padding-left: 1.4rem; margin-bottom: 0.6rem; }
+  li { margin-bottom: 0.25rem; font-size: 0.92rem; color: var(--text); }
+
+  .tag {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    vertical-align: middle;
+  }
+  .tag-blue { background: rgba(0,212,255,0.12); color: var(--accent); border: 1px solid rgba(0,212,255,0.3); }
+  .tag-orange { background: rgba(255,107,53,0.12); color: var(--accent2); border: 1px solid rgba(255,107,53,0.3); }
+  .tag-green { background: rgba(16,185,129,0.12); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+  .tag-red { background: rgba(239,68,68,0.12); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+  .tag-gold { background: rgba(245,158,11,0.12); color: var(--gold); border: 1px solid rgba(245,158,11,0.3); }
+
+  footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--muted);
+    font-size: 0.82rem;
+    border-top: 1px solid var(--border);
+    margin-top: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🔓 Cryptanalysis — Breaking Ciphers</h1>
+  <p>Complete step-by-step guide to breaking every cipher type covered in the course</p>
+</header>
+
+<nav>
+  <a href="#attacks">Attack Types</a>
+  <a href="#transposition">Transposition</a>
+  <a href="#caesar">Caesar</a>
+  <a href="#affine">Affine</a>
+  <a href="#vigenere">Vigenère</a>
+  <a href="#statistical">Statistical Analysis</a>
+  <a href="#ic">Index of Coincidence</a>
+</nav>
+
+<main>
+
+<!-- ===== 1. ATTACK TYPES ===== -->
+<div class="section" id="attacks">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(0,212,255,0.08)">⚔️</div>
+    <div>
+      <h2>Types of Cryptanalytic Attacks</h2>
+      <p>Classified by how much information the attacker has</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="grid2">
+      <div class="info-box blue">
+        <span class="icon">🔍</span>
+        <div>
+          <strong style="color:var(--accent)">Ciphertext-Only Attack</strong><br>
+          Attacker has only ciphertext. Hardest attack. Relies on statistics and guessing.<br>
+          <span class="tag tag-red">Hardest</span>
+        </div>
+      </div>
+      <div class="info-box orange">
+        <span class="icon">📋</span>
+        <div>
+          <strong style="color:var(--accent2)">Known-Plaintext Attack</strong><br>
+          Attacker has plaintext + matching ciphertext pairs. Used to deduce the key.<br>
+          <span class="tag tag-orange">Medium</span>
+        </div>
+      </div>
+      <div class="info-box green">
+        <span class="icon">✏️</span>
+        <div>
+          <strong style="color:var(--green)">Chosen-Plaintext Attack</strong><br>
+          Attacker picks the plaintext to be encrypted. More powerful than known-plaintext.<br>
+          <span class="tag tag-green">Easier</span>
+        </div>
+      </div>
+      <div class="info-box red">
+        <span class="icon">🔨</span>
+        <div>
+          <strong style="color:var(--red)">Brute-Force Attack</strong><br>
+          Try every possible key until plaintext is found. Impractical for large key spaces.<br>
+          <span class="tag tag-blue">Always possible</span>
+        </div>
+      </div>
+    </div>
+
+    <h3>✦ Practical Example — Brute-Force on Caesar Cipher</h3>
+    <p>Caesar has only 26 possible keys. We simply try all of them.</p>
+
+    <div class="cipher-block">
+      <span class="label">Ciphertext</span>
+      KHOOR ZRUOG
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Key k</th><th>Decrypted Result</th><th>Valid English?</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td class="mono">JGNNQ YQTNF</td><td class="bad">✗</td></tr>
+          <tr><td>2</td><td class="mono">IFMMP XPSME</td><td class="bad">✗</td></tr>
+          <tr><td class="top">3</td><td class="mono good">HELLO WORLD</td><td class="good">✓ Found!</td></tr>
+          <tr><td>4</td><td class="mono">GDKKN VNQKC</td><td class="bad">✗</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="result-reveal">
+      <div class="label">Recovered Plaintext</div>
+      <div class="value">HELLO WORLD &nbsp;|&nbsp; Key = 3</div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ===== 2. TRANSPOSITION ===== -->
+<div class="section" id="transposition">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(124,58,237,0.08)">🔀</div>
+    <div>
+      <h2>Breaking Transposition Ciphers</h2>
+      <p>Columnar · Keyword Columnar · Double Transposition · Scytale</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="info-box blue">
+      <span class="icon">💡</span>
+      <div>
+        <strong>Key insight:</strong> In a transposition cipher, the <em>same letters</em> are present as in the plaintext — only their positions change. Therefore the <strong style="color:var(--accent)">letter frequency distribution is identical to the original plaintext</strong>. This is how we detect transposition.
+      </div>
+    </div>
+
+    <!-- Columnar -->
+    <h3>1. Breaking Simple Columnar Transposition</h3>
+    <p>The ciphertext is formed by reading down each column of a rectangular grid. To break it, we test each divisor of the ciphertext length as a possible number of columns.</p>
+
+    <div class="cipher-block">
+      <span class="label">Ciphertext</span>
+      SHGEEHELTTIX &nbsp;&nbsp; (12 letters)
+    </div>
+
+    <p>Possible column counts: divisors of 12 → <strong>2, 3, 4, 6</strong></p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div><p>Try <strong>4 columns</strong> (12 ÷ 4 = 3 rows). Fill ciphertext down each column:</p></div>
+      </div>
+    </div>
+
+    <div class="matrix-wrap">
+      <div class="matrix">
+        <div class="matrix-label">Try: 4 columns</div>
+        <div class="matrix-row">
+          <div class="matrix-cell hdr"></div>
+          <div class="matrix-cell hdr">C0</div><div class="matrix-cell hdr">C1</div>
+          <div class="matrix-cell hdr">C2</div><div class="matrix-cell hdr">C3</div>
+        </div>
+        <div class="matrix-row">
+          <div class="matrix-cell hdr">R0</div>
+          <div class="matrix-cell active">S</div><div class="matrix-cell active">E</div>
+          <div class="matrix-cell active">E</div><div class="matrix-cell active">T</div>
+        </div>
+        <div class="matrix-row">
+          <div class="matrix-cell hdr">R1</div>
+          <div class="matrix-cell">H</div><div class="matrix-cell">E</div>
+          <div class="matrix-cell">L</div><div class="matrix-cell">I</div>
+        </div>
+        <div class="matrix-row">
+          <div class="matrix-cell hdr">R2</div>
+          <div class="matrix-cell">G</div><div class="matrix-cell">H</div>
+          <div class="matrix-cell">T</div><div class="matrix-cell">X</div>
+        </div>
+      </div>
+      <div class="arrow">→</div>
+      <div style="text-align:center">
+        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem">READ ROWS:</p>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:1.1rem;color:var(--green)">
+          S-E-E-T<br>H-E-L-I<br>G-H-T-X
+        </div>
+      </div>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">2</div>
+        <div><p>Reading rows gives: <strong style="color:var(--green)">SEETHELIGHT</strong> ✓ — meaningful English!</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div><p>Key = <strong>4 columns</strong>. The trailing X was padding to complete the grid.</p></div>
+      </div>
+    </div>
+
+    <div class="result-reveal">
+      <div class="label">Recovered Plaintext</div>
+      <div class="value">SEETHELIGHT &nbsp;|&nbsp; Key = 4 columns</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Keyword Columnar -->
+    <h3>2. Breaking Keyword Columnar Transposition</h3>
+
+    <div class="cipher-block">
+      <span class="label">Ciphertext (45 letters)</span>
+      VOESA IVENE MRTNL EANGE WTNIM HTMEE ADLTR NISHO DWOEH
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div><p>45 letters → possible grid dimensions: <strong>9×5, 5×9, 15×3, 3×15</strong></p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div><p>Try a <strong>9 rows × 5 columns</strong> grid. Fill ciphertext column by column:</p></div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Col 0</th><th>Col 1</th><th>Col 2</th><th>Col 3</th><th>Col 4</th></tr></thead>
+        <tbody>
+          <tr><td class="top">V</td><td>E</td><td>G</td><td>M</td><td>I</td></tr>
+          <tr><td>O</td><td>M</td><td>E</td><td>E</td><td>S</td></tr>
+          <tr><td>E</td><td>R</td><td>W</td><td>E</td><td>H</td></tr>
+          <tr><td>S</td><td>T</td><td>T</td><td>A</td><td>O</td></tr>
+          <tr><td>A</td><td>N</td><td>N</td><td>D</td><td>D</td></tr>
+          <tr><td>I</td><td>L</td><td>I</td><td>L</td><td>W</td></tr>
+          <tr><td>V</td><td>E</td><td>M</td><td>T</td><td>O</td></tr>
+          <tr><td>E</td><td>A</td><td>H</td><td>R</td><td>E</td></tr>
+          <tr><td>N</td><td>N</td><td>T</td><td>N</td><td>H</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">3</div>
+        <div><p>Permute columns until row 0 spells a recognizable word.<br>
+        Try order <strong>2, 4, 0, 1, 3</strong>: Row 0 → <strong style="color:var(--gold)">G · I · V · E · M</strong> → starts with GIVE ✓</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div><p>Column order <strong>24013</strong> is the recovered key. Read rows to get plaintext.</p></div>
+      </div>
+    </div>
+
+    <div class="result-reveal">
+      <div class="label">Recovered Plaintext</div>
+      <div class="value">GIVE ME SOMEWHERE TO STAND AND I WILL MOVE THE EARTH &nbsp;|&nbsp; Key = 24013</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Double Transposition -->
+    <h3>3. Breaking Double Transposition — Divide & Conquer</h3>
+
+    <div class="info-box purple">
+      <span class="icon">⚡</span>
+      <div>
+        <strong>Strategy:</strong> Instead of guessing the full key at once, split into two stages.<br>
+        Step A — undo the <em>column permutation</em> (look for partial words in columns).<br>
+        Step B — undo the <em>row permutation</em> (now trivial since columns are fixed).
+      </div>
+    </div>
+
+    <div class="cipher-block">
+      <span class="label">Ciphertext</span>
+      NADWTKCAATAT
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div><p>Place in a <strong>3×4 matrix</strong> (read across rows):</p></div>
+      </div>
+    </div>
+
+    <div class="matrix-wrap">
+      <div class="matrix">
+        <div class="matrix-label">Ciphertext in 3×4 grid</div>
+        <div class="matrix-row"><div class="matrix-cell">N</div><div class="matrix-cell">A</div><div class="matrix-cell">D</div><div class="matrix-cell">W</div></div>
+        <div class="matrix-row"><div class="matrix-cell">T</div><div class="matrix-cell">K</div><div class="matrix-cell">C</div><div class="matrix-cell">A</div></div>
+        <div class="matrix-row"><div class="matrix-cell">A</div><div class="matrix-cell">T</div><div class="matrix-cell">A</div><div class="matrix-cell">T</div></div>
+      </div>
+      <div class="arrow">→ col perm (3,1,0,2)</div>
+      <div class="matrix">
+        <div class="matrix-label">After undoing columns</div>
+        <div class="matrix-row"><div class="matrix-cell">W</div><div class="matrix-cell">A</div><div class="matrix-cell">N</div><div class="matrix-cell">D</div></div>
+        <div class="matrix-row"><div class="matrix-cell">A</div><div class="matrix-cell">K</div><div class="matrix-cell">T</div><div class="matrix-cell">C</div></div>
+        <div class="matrix-row"><div class="matrix-cell">T</div><div class="matrix-cell">T</div><div class="matrix-cell">A</div><div class="matrix-cell">A</div></div>
+      </div>
+      <div class="arrow">→ row perm (2,1,0)</div>
+      <div class="matrix">
+        <div class="matrix-label">Final plaintext grid</div>
+        <div class="matrix-row"><div class="matrix-cell result">A</div><div class="matrix-cell result">T</div><div class="matrix-cell result">T</div><div class="matrix-cell result">A</div></div>
+        <div class="matrix-row"><div class="matrix-cell result">C</div><div class="matrix-cell result">K</div><div class="matrix-cell result">A</div><div class="matrix-cell result">T</div></div>
+        <div class="matrix-row"><div class="matrix-cell result">D</div><div class="matrix-cell result">A</div><div class="matrix-cell result">W</div><div class="matrix-cell result">N</div></div>
+      </div>
+    </div>
+
+    <div class="result-reveal">
+      <div class="label">Recovered Plaintext</div>
+      <div class="value">ATTACKATDAWN &nbsp;|&nbsp; Column perm: (3,1,0,2) · Row perm: (2,1,0)</div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ===== 3. CAESAR ===== -->
+<div class="section" id="caesar">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(245,158,11,0.08)">👑</div>
+    <div>
+      <h2>Breaking the Caesar Cipher</h2>
+      <p>Only 26 possible keys — brute-force or frequency analysis</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="grid2">
+      <div class="info-box blue">
+        <span class="icon">📐</span>
+        <div>
+          <strong>Encryption:</strong> c = (p + k) mod 26<br>
+          <strong>Decryption:</strong> p = (c − k) mod 26<br>
+          where A=0, B=1, … Z=25
+        </div>
+      </div>
+      <div class="info-box green">
+        <span class="icon">🎯</span>
+        <div>
+          <strong>Breaking strategy:</strong><br>
+          1. Count letter frequencies in ciphertext<br>
+          2. Most frequent letter ≈ E (or T, A, O…)<br>
+          3. Compute k, verify with brute-force if needed
+        </div>
+      </div>
+    </div>
+
+    <h3>✦ Worked Example</h3>
+
+    <div class="cipher-block">
+      <span class="label">Ciphertext</span>
+      WKH TXLFN EURZQ IRA
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div><p>Try <strong>k = 3</strong>: W→T, K→H, H→E → "THE" ✓ — common English word!</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div><p>Apply p = (c − 3) mod 26 to every letter:</p></div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Cipher letter</th><th>Numeric value</th><th>−3 mod 26</th><th>Plaintext</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">W</td><td>22</td><td>22 − 3 = 19</td><td class="good mono">T</td></tr>
+          <tr><td class="mono">K</td><td>10</td><td>10 − 3 = 7</td><td class="good mono">H</td></tr>
+          <tr><td class="mono">H</td><td>7</td><td>7 − 3 = 4</td><td class="good mono">E</td></tr>
+          <tr><td class="mono">T</td><td>19</td><td>19 − 3 = 16</td><td class="good mono">Q</td></tr>
+          <tr><td class="mono">X</td><td>23</td><td>23 − 3 = 20</td><td class="good mono">U</td></tr>
+          <tr><td class="mono">L</td><td>11</td><td>11 − 3 = 8</td><td class="good mono">I</td></tr>
+          <tr><td class="mono">F</td><td>5</td><td>5 − 3 = 2</td><td class="good mono">C</td></tr>
+          <tr><td class="mono">N</td><td>13</td><td>13 − 3 = 10</td><td class="good mono">K</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="result-reveal">
+      <div class="label">Recovered Plaintext</div>
+      <div class="value">THE QUICK BROWN FOX &nbsp;|&nbsp; Key k = 3</div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ===== 4. AFFINE ===== -->
+<div class="section" id="affine">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(255,107,53,0.08)">🧮</div>
+    <div>
+      <h2>Breaking the Affine Cipher</h2>
+      <p>e(x) = ax + b (mod 26) · only 312 valid key pairs</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="grid2">
+      <div class="info-box blue">
+        <span class="icon">🔑</span>
+        <div>
+          <strong>Encryption:</strong> c = ax + b (mod 26)<br>
+          <strong>Decryption:</strong> p = a⁻¹(y − b) (mod 26)<br>
+          Constraint: gcd(a, 26) = 1
+        </div>
+      </div>
+      <div class="info-box orange">
+        <span class="icon">🎯</span>
+        <div>
+          <strong>Breaking strategy:</strong><br>
+          1. Find the 2 most frequent ciphertext letters<br>
+          2. Assume they map to E and T (or E and A, etc.)<br>
+          3. Solve 2 equations in 2 unknowns (a and b)<br>
+          4. Verify gcd(a,26)=1, then decrypt
+        </div>
+      </div>
+    </div>
+
+    <h3>✦ Worked Example (from the lecture)</h3>
+
+    <div class="cipher-block">
+      <span class="label">Ciphertext (57 characters)</span>
+      FMXVEDKAPHFERBNDKRXRSREFMORUDSDKDVSHVUFEDKAPR KDLYEVLRHHRH
+    </div>
+
+    <h4>Step 1 — Frequency count</h4>
+    <div class="freq-bar-container">
+      <div class="freq-row"><span class="freq-letter">R</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:100%;background:linear-gradient(90deg,#ef4444,#f97316)"><span class="freq-count">8</span></div></div><span class="freq-pct">most</span></div>
+      <div class="freq-row"><span class="freq-letter">D</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:87%;background:linear-gradient(90deg,#f59e0b,#eab308)"><span class="freq-count">7</span></div></div><span class="freq-pct">2nd</span></div>
+      <div class="freq-row"><span class="freq-letter">E</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:62%;background:linear-gradient(90deg,#10b981,#06b6d4)"><span class="freq-count">5</span></div></div><span class="freq-pct">3rd</span></div>
+      <div class="freq-row"><span class="freq-letter">H</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:62%;background:linear-gradient(90deg,#10b981,#06b6d4)"><span class="freq-count">5</span></div></div><span class="freq-pct">3rd</span></div>
+      <div class="freq-row"><span class="freq-letter">K</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:62%;background:linear-gradient(90deg,#10b981,#06b6d4)"><span class="freq-count">5</span></div></div><span class="freq-pct">3rd</span></div>
+      <div class="freq-row"><span class="freq-letter">F</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:50%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"><span class="freq-count">4</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">S</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:50%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"><span class="freq-count">4</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">V</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:50%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"><span class="freq-count">4</span></div></div></div>
+    </div>
+
+    <h4>Step 2 — Form hypotheses</h4>
+    <p>Most frequent ciphertext letter <strong>R (value 17)</strong> → assume it encrypts <strong>e (value 4)</strong><br>
+    Second most frequent <strong>D (value 3)</strong> → assume it encrypts <strong>t (value 19)</strong></p>
+
+    <div class="formula">
+      e_K(4) = 17  →  4a + b = 17<br>
+      e_K(19) = 3  →  19a + b = 3
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Hypothesis</th><th>R maps to</th><th>2nd maps to</th><th>Equations</th><th>a</th><th>b</th><th>gcd(a,26)</th><th>Valid?</th></tr></thead>
+        <tbody>
+          <tr><td>#1</td><td>e (4)</td><td>D→t (19)</td><td>4a+b=17, 19a+b=3</td><td>6</td><td>−7</td><td>2</td><td class="bad">✗ illegal</td></tr>
+          <tr><td>#2</td><td>e (4)</td><td>E→t (19)</td><td>4a+b=17, 4a+b=4</td><td>13</td><td>—</td><td>13</td><td class="bad">✗ illegal</td></tr>
+          <tr><td>#3</td><td>e (4)</td><td>H→t (19)</td><td>4a+b=17, 7a+b=19</td><td>8</td><td>—</td><td>2</td><td class="bad">✗ illegal</td></tr>
+          <tr><td class="top">#4</td><td class="top">e (4)</td><td class="top">K→t (10)</td><td class="top">4a+b=17, 10a+b=19</td><td class="good">3</td><td class="good">5</td><td class="good">1</td><td class="good">✓ Legal!</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>Step 3 — Compute decryption function</h4>
+    <div class="formula">
+      Need: a⁻¹ mod 26 where a = 3<br>
+      3 × 9 = 27 ≡ 1 (mod 26)  →  a⁻¹ = 9<br><br>
+      d_K(y) = 9(y − 5) mod 26 = 9y − 45 mod 26 = <strong>9y − 19 (mod 26)</strong>
+    </div>
+
+    <h4>Step 4 — Decrypt a few letters to verify</h4>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Cipher letter</th><th>y value</th><th>9y − 19 mod 26</th><th>Plaintext</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">F</td><td>5</td><td>45 − 19 = 26 ≡ 0</td><td class="good mono">a</td></tr>
+          <tr><td class="mono">M</td><td>12</td><td>108 − 19 = 89 ≡ 11</td><td class="good mono">l</td></tr>
+          <tr><td class="mono">X</td><td>23</td><td>207 − 19 = 188 ≡ 6</td><td class="good mono">g</td></tr>
+          <tr><td class="mono">V</td><td>21</td><td>189 − 19 = 170 ≡ 14</td><td class="good mono">o</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="result-reveal">
+      <div class="label">Recovered Plaintext &nbsp;|&nbsp; Key: a=3, b=5</div>
+      <div class="value">ALGORITHMS ARE QUITE GENERAL DEFINITION SO FAR ARITHMETIC PROCESSES</div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ===== 5. VIGENERE ===== -->
+<div class="section" id="vigenere">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(16,185,129,0.08)">🗝️</div>
+    <div>
+      <h2>Breaking the Vigenère Cipher</h2>
+      <p>Kasiski Test + Index of Coincidence → find key length → break each shift separately</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="info-box blue">
+      <span class="icon">🎯</span>
+      <div>
+        <strong>Master strategy — three phases:</strong><br>
+        <strong>Phase 1</strong> — Determine the key length (Kasiski or IC method)<br>
+        <strong>Phase 2</strong> — Split ciphertext into groups of size = key length<br>
+        <strong>Phase 3</strong> — Solve each group independently as a Caesar cipher
+      </div>
+    </div>
+
+    <!-- Kasiski -->
+    <h3>Phase 1A — Kasiski Test</h3>
+    <p>If the same plaintext fragment happens to align with the same portion of the keyword more than once, it will produce identical ciphertext. The spacing between these repetitions is a multiple of the key length.</p>
+
+    <div class="cipher-block">
+      <span class="label">Example ciphertext — encrypted with keyword POETRY (length 6)</span>
+      IVIVYGARMLMYIVIKFDIVIFRL
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div><p>Scan for repeated groups: <strong style="color:var(--gold)">IVI</strong> appears at positions <strong>0, 12, 18</strong></p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div><p>Compute gaps: 12 − 0 = <strong>12</strong>, &nbsp; 18 − 12 = <strong>6</strong></p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div><p>GCD(12, 6) = <strong style="color:var(--accent)">6</strong> → key length is likely 6 (or a divisor: 2, 3)</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div><p>In this case key length = <strong>6</strong> exactly ✓</p></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Full break -->
+    <h3>Phase 1B → 3 — Complete Break (3-letter keyword)</h3>
+
+    <div class="cipher-block">
+      <span class="label">Ciphertext (key length = 3, determined by Kasiski/IC)</span>
+      RLWRV MRLAQ EDUEQ QWGKI LFMFE XZYXA QXGJH FMXKM QWRLA LKLFE LGWCL SOLMX RLWPI OCVWL SKNIS IMFES JUVAR MFEXZ CVWUS MJHTC RGRVM RLSZS MREFW XZGRY RLWPI OMYDB SFJCT CAZYX AQ
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div><p>Split into 3 sets by position modulo 3:<br>
+        <strong>S₀</strong> = letters at positions 0,3,6,9,… &nbsp;|&nbsp; <strong>S₁</strong> = 1,4,7,10,… &nbsp;|&nbsp; <strong>S₂</strong> = 2,5,8,11,…</p></div>
+      </div>
+    </div>
+
+    <div class="grid3">
+      <div>
+        <h4>S₀ — most frequent</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Letter</th><th>Count</th></tr></thead>
+            <tbody>
+              <tr><td class="top mono">R</td><td class="top">10</td></tr>
+              <tr><td class="mono">Q</td><td>4</td></tr>
+              <tr><td class="mono">M</td><td>3</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <h4>S₁ — most frequent</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Letter</th><th>Count</th></tr></thead>
+            <tbody>
+              <tr><td class="top mono">X</td><td class="top">7</td></tr>
+              <tr><td class="mono">L</td><td>6</td></tr>
+              <tr><td class="mono">V</td><td>5</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <h4>S₂ — most frequent</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Letter</th><th>Count</th></tr></thead>
+            <tbody>
+              <tr><td class="top mono">W</td><td class="top">6</td></tr>
+              <tr><td class="mono">M</td><td>4</td></tr>
+              <tr><td class="mono">A</td><td>5</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">2</div>
+        <div><p>For <strong>S₀</strong>: R (17) is most frequent → assume R = E (4):<br>
+        k₀ = 17 − 4 = <strong>13</strong>. Candidate k₀ values: {13, 24, 4, 3, 0, 9, 17, 25} (matching E,T,N,O,R,I,A,S)</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div><p>For <strong>S₁</strong>: X (23) is most frequent → k₁ candidates map X to E,T,N…<br>
+        k₁ ∈ {19, 10, 4, 3, 17, 22, 6, 18}</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div><p>For <strong>S₂</strong>: W (22) is most frequent → k₂ candidates:<br>
+        k₂ ∈ {18, 9, 3, 2, 16, 21, 5, 17}</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div><p>Test each combination (8³ = 512 candidates) against the first few ciphertext letters.<br>
+        Winner: <strong style="color:var(--gold)">(k₀=24, k₁=4, k₂=18)</strong> → Keyword = <strong style="color:var(--green)">Y · E · S</strong> ✓</p></div>
+      </div>
+    </div>
+
+    <h4>Verification — decrypt with key YES</h4>
+    <div class="formula">
+      p_i = (c_i − k_{i mod 3}) mod 26<br><br>
+      R=17 − Y=24 → (17−24+26) mod 26 = 19 = T ✓<br>
+      L=11 − E=4  → 7 = H ✓<br>
+      W=22 − S=18 → 4 = E ✓  →  "THE…"
+    </div>
+
+    <div class="result-reveal">
+      <div class="label">Recovered Plaintext &nbsp;|&nbsp; Key = YES</div>
+      <div class="value">THE TRUTH IS ALWAYS SOMETHING THAT IS TOLD, NOT SOMETHING THAT IS KNOWN. IF THERE WERE NO SPEAKING OR WRITING, THERE WOULD BE NO TRUTH ABOUT ANYTHING. THERE WOULD ONLY BE WHAT IS.</div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ===== 6. STATISTICAL ANALYSIS ===== -->
+<div class="section" id="statistical">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(245,158,11,0.08)">📊</div>
+    <div>
+      <h2>Statistical Analysis of Simple Substitution</h2>
+      <p>Letter frequencies · digraphs · trigraphs · roughness</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <h3>English Letter Frequencies</h3>
+    <div class="freq-bar-container">
+      <div class="freq-row"><span class="freq-letter">E</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:100%;background:linear-gradient(90deg,#ef4444,#f97316)"><span class="freq-count">12.7%</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">T</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:72%;background:linear-gradient(90deg,#f59e0b,#eab308)"><span class="freq-count">9.1%</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">A</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:65%;background:linear-gradient(90deg,#10b981,#06b6d4)"><span class="freq-count">8.2%</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">O</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:59%;background:linear-gradient(90deg,#10b981,#06b6d4)"><span class="freq-count">7.5%</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">I</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:55%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"><span class="freq-count">7.0%</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">N</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:53%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"><span class="freq-count">6.7%</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">S</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:50%;background:linear-gradient(90deg,#6366f1,#8b5cf6)"><span class="freq-count">6.3%</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">H</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:48%;background:linear-gradient(90deg,#ec4899,#f43f5e)"><span class="freq-count">6.1%</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">R</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:47%;background:linear-gradient(90deg,#ec4899,#f43f5e)"><span class="freq-count">6.0%</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">D</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:34%;background:linear-gradient(90deg,#64748b,#94a3b8)"><span class="freq-count">4.3%</span></div></div></div>
+      <div class="freq-row"><span class="freq-letter">L</span><div class="freq-bar-wrap"><div class="freq-bar" style="width:32%;background:linear-gradient(90deg,#64748b,#94a3b8)"><span class="freq-count">4.0%</span></div></div></div>
+    </div>
+
+    <div class="info-box green">
+      <span class="icon">🧠</span>
+      <div>
+        <strong>Memory aid:</strong> High-frequency letters in order → <strong style="color:var(--gold)">ETAOINSHRD</strong><br>
+        Or remember the word <strong>SENORITA</strong> which contains most top-8 letters.<br>
+        Low-frequency letters: <strong>J, K, Q, X, Z</strong> (together < 1% of English text)
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="grid2">
+      <div>
+        <h4>Most Common Digraphs (pairs)</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Rank</th><th>Digraph</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td class="top mono">TH</td></tr>
+              <tr><td>2</td><td class="mono">HE</td></tr>
+              <tr><td>3</td><td class="mono">IN</td></tr>
+              <tr><td>4</td><td class="mono">ER</td></tr>
+              <tr><td>5</td><td class="mono">AN</td></tr>
+              <tr><td>6</td><td class="mono">RE</td></tr>
+              <tr><td>7</td><td class="mono">ED</td></tr>
+              <tr><td>8</td><td class="mono">ON</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <h4>Most Common Trigraphs (triples)</h4>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Rank</th><th>Trigraph</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td class="top mono">THE</td></tr>
+              <tr><td>2</td><td class="mono">ING</td></tr>
+              <tr><td>3</td><td class="mono">AND</td></tr>
+              <tr><td>4</td><td class="mono">HER</td></tr>
+              <tr><td>5</td><td class="mono">ERE</td></tr>
+              <tr><td>6</td><td class="mono">ENT</td></tr>
+              <tr><td>7</td><td class="mono">THA</td></tr>
+              <tr><td>8</td><td class="mono">NTH</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>Roughness — Identifying Cipher Type by Distribution Shape</h3>
+
+    <div class="grid2">
+      <div class="info-box blue">
+        <span class="icon">📈</span>
+        <div>
+          <strong style="color:var(--accent)">Rough distribution</strong> (high peaks & low troughs)<br>
+          Indicates: <strong>plaintext, transposition,</strong> or <strong>simple substitution</strong>.<br>
+          The same letter frequencies are present — just possibly relabeled.
+        </div>
+      </div>
+      <div class="info-box orange">
+        <span class="icon">📉</span>
+        <div>
+          <strong style="color:var(--accent2)">Flat distribution</strong> (no clear peaks)<br>
+          Indicates: <strong>polyalphabetic substitution</strong> (Vigenère, Enigma).<br>
+          Multiple alphabets suppress frequency patterns.
+        </div>
+      </div>
+    </div>
+
+    <h3>✦ Breaking Simple Substitution — Step by Step</h3>
+
+    <div class="cipher-block">
+      <span class="label">Ciphertext (simple substitution)</span>
+      LWVOL QVWAT DOLOH HLDAW VWPTV FHWDW RSVWO DNTVA WRWDF HWHFO RLFWK LFJLF FLQOT DHFVW DMFBW DFWVO DMSTX VHWAF TVPKA QLVCW
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div><p><strong>Count letter frequencies.</strong> Find: W=16, F=9, V=8, D=7, L=6, H=5, O=5…<br>
+        W is the most frequent → most likely represents <strong>E</strong> (most common in English)</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div><p>F (2nd most frequent) → likely <strong>T</strong>. So substitute: W→E, F→T</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div><p>Look for digraphs in ciphertext. If WH appears often → WH = EH or TH? Try WH = TH → W=T conflicts. So W=E, H=T gives HW = TE, WH = ET — check against known digraph EN, TH patterns.</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div><p>Once a few letters are correctly guessed, <strong>partial words</strong> start to reveal themselves (e.g., "_HE_" → "THE_"). Fill in letter by letter until the full message is revealed.</p></div>
+      </div>
+    </div>
+
+    <div class="info-box green">
+      <span class="icon">💡</span>
+      <div>
+        <strong>Pro tip:</strong> Look for single-letter words in ciphertext → must be <strong>A</strong> or <strong>I</strong>.<br>
+        Two-letter words most likely: <strong>OF, TO, IN, IT, IS, BE, AS, AT, SO, WE, HE, BY, OR, AN, DO</strong>.<br>
+        Three-letter words most likely: <strong>THE, AND, FOR, ARE, BUT, NOT, YOU, ALL, CAN, HER</strong>.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ===== 7. INDEX OF COINCIDENCE ===== -->
+<div class="section" id="ic">
+  <div class="section-header">
+    <div class="section-icon" style="background:rgba(124,58,237,0.08)">📐</div>
+    <div>
+      <h2>Index of Coincidence (IC)</h2>
+      <p>Determine cipher type and estimate Vigenère key length</p>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="formula">
+      IC = Σ Fᵢ(Fᵢ − 1) / n(n − 1)
+      <br><small style="color:var(--muted)">Fᵢ = count of letter i in ciphertext &nbsp;·&nbsp; n = total ciphertext length</small>
+    </div>
+
+    <div class="grid2">
+      <div class="info-box blue">
+        <span class="icon">🔵</span>
+        <div>
+          <strong>IC ≈ 0.065</strong> — Mono-alphabetic substitution or transposition<br>
+          Distribution is "rough" like natural English.
+        </div>
+      </div>
+      <div class="info-box orange">
+        <span class="icon">🟠</span>
+        <div>
+          <strong>IC ≈ 0.038</strong> — Polyalphabetic substitution (Vigenère, long key)<br>
+          Distribution is nearly flat / uniform.
+        </div>
+      </div>
+    </div>
+
+    <div class="info-box green">
+      <span class="icon">✅</span>
+      <div>
+        <strong>Decision rule:</strong><br>
+        IC > 0.065 → <strong>Mono-alphabetic</strong> (simple substitution)<br>
+        IC ≈ 0.065 exactly → <strong>Transposition</strong> (same letters, shuffled)<br>
+        0.038 ≤ IC &lt; 0.065 → <strong>Polyalphabetic</strong> (Vigenère etc.)
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>✦ Full Worked Example (from the lecture)</h3>
+
+    <div class="cipher-block">
+      <span class="label">Ciphertext — 120 letters</span>
+      EEAHR RFOWW TGDTE SCHES ROEST EMCNEAOOTL AKNEE TSSEO AVXNC STPOO OEOEATASBI OAEER AXHEE RADNF PSINO ISEAURPNED XEPSE PFCDL LZTER JAETY RETHE
+    </div>
+
+    <h4>Step 1 — Build the frequency table</h4>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Letter</th><th>F</th><th>F(F−1)</th><th>Letter</th><th>F</th><th>F(F−1)</th><th>Letter</th><th>F</th><th>F(F−1)</th></tr></thead>
+        <tbody>
+          <tr><td>A</td><td class="top">11</td><td class="top">110</td><td>J</td><td>1</td><td>0</td><td>S</td><td>10</td><td>90</td></tr>
+          <tr><td>B</td><td>1</td><td>0</td><td>K</td><td>1</td><td>0</td><td>T</td><td>10</td><td>90</td></tr>
+          <tr><td>C</td><td>4</td><td>12</td><td>L</td><td>3</td><td>6</td><td>U</td><td>1</td><td>0</td></tr>
+          <tr><td>D</td><td>4</td><td>12</td><td>M</td><td>1</td><td>0</td><td>V</td><td>1</td><td>0</td></tr>
+          <tr><td>E</td><td class="top">24</td><td class="top">552</td><td>N</td><td>6</td><td>30</td><td>W</td><td>2</td><td>2</td></tr>
+          <tr><td>F</td><td>3</td><td>6</td><td>O</td><td class="top">11</td><td class="top">110</td><td>X</td><td>3</td><td>6</td></tr>
+          <tr><td>G</td><td>1</td><td>0</td><td>P</td><td>5</td><td>20</td><td>Y</td><td>1</td><td>0</td></tr>
+          <tr><td>H</td><td>4</td><td>12</td><td>Q</td><td>0</td><td>0</td><td>Z</td><td>1</td><td>0</td></tr>
+          <tr><td>I</td><td>3</td><td>6</td><td>R</td><td>8</td><td>56</td><td colspan="3" style="background:var(--surface2);color:var(--accent);font-weight:700">Σ = 1110</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>Step 2 — Compute IC</h4>
+    <div class="formula">
+      ΣF(F−1) = 110+0+12+12+552+6+0+12+6+0+0+6+0+30+110+20+56+90+90+0+0+2+6+0+0+0 = <strong>1110</strong><br><br>
+      n(n−1) = 120 × 119 = <strong>14,280</strong><br><br>
+      IC = 1110 / 14280 = <strong style="color:var(--green)">0.0777</strong>
+    </div>
+
+    <div class="result-reveal">
+      <div class="label">Conclusion</div>
+      <div class="value">IC = 0.077 &gt; 0.065 → Mono-alphabetic substitution cipher ✓</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>Using IC to Estimate Vigenère Key Length</h3>
+    <p>Once you know the cipher is polyalphabetic, estimate the key length k using:</p>
+
+    <div class="formula">
+      k ≈ (0.0265 × N) / ((N−1) × IC − 0.065N + 0.0385)
+      <br><small style="color:var(--muted)">N = total ciphertext length &nbsp;·&nbsp; IC = computed index of coincidence</small>
+    </div>
+
+    <div class="info-box blue">
+      <span class="icon">🧪</span>
+      <div>
+        <strong>Example:</strong> IC = 0.047, N = 200 letters<br>
+        k ≈ (0.0265 × 200) / ((199 × 0.047) − (0.065 × 200) + 0.0385)<br>
+        k ≈ 5.3 / (9.353 − 13 + 0.0385) ≈ 5.3 / (−3.61)…<br>
+        Try k = 4, 5, 6: for each k, split text and compute IC of each sub-sequence. The k giving sub-IC ≈ 0.065 is the correct key length.
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3>Master Cryptanalysis Flowchart</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div><p><strong>Compute IC.</strong> Classify: Mono (IC≈0.065), Poly (IC≈0.038), or Transposition (IC≈0.065 with same letter set as plaintext)</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div><p><strong>If Transposition:</strong> Test array dimensions (divisors of ciphertext length). Try reading rows/columns. Look for English words in rows.</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div><p><strong>If Mono-alphabetic:</strong> Count letter frequencies. Map most frequent ciphertext letter → E (12.7%). Use digraph/trigraph patterns. Fill in partial words iteratively.</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div><p><strong>If Affine:</strong> Use top 2 frequent letters, set up 2-equation system. Solve for a,b. Check gcd(a,26)=1. Compute a⁻¹ mod 26. Decrypt and verify.</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div><p><strong>If Poly (Vigenère):</strong> Use Kasiski test or IC sub-sequence method to find key length k. Split into k groups. Solve each group as Caesar cipher using frequency analysis.</p></div>
+      </div>
+      <div class="step">
+        <div class="step-num">6</div>
+        <div><p><strong>Verify:</strong> Decrypted text must be readable, grammatical English. If not, revisit your frequency assumptions and try the next candidate.</p></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</main>
+
+<footer>
+  Cryptanalysis · College of Computer Science · University of Technology · Semester 2 — 2025/2026
+</footer>
+
+</body>
+</html>
